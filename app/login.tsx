@@ -1,21 +1,21 @@
 
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Link, Stack, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-    View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    Platform,
-    Alert,
     useWindowDimensions,
-    KeyboardAvoidingView,
+    View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { Stack, useRouter, Link } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 
 // Theme Colors from request
 const COLORS = {
@@ -50,8 +50,11 @@ const SHADOWS = {
     },
 };
 
+import { useSession } from '../ctx';
+
 export default function LoginScreen() {
     const router = useRouter();
+    const { signIn } = useSession();
     const { height } = useWindowDimensions();
     const [formData, setFormData] = useState({
         email: '',
@@ -59,11 +62,23 @@ export default function LoginScreen() {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [activeField, setActiveField] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
-        // Implement login logic here
-        console.log('Login attempt:', formData);
-        Alert.alert('Login', 'Login functionality would go here');
+    const handleLogin = async () => {
+        if (!formData.email || !formData.password) {
+            Alert.alert('Error', 'Please enter both email and password');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await signIn(formData.email, formData.password);
+            // Router redirect handled by useProtectedRoute in ctx.tsx
+        } catch (error: any) {
+             Alert.alert('Login Failed', error.message || 'Something went wrong');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSocialLogin = (provider: string) => {

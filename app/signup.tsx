@@ -1,20 +1,17 @@
 
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Dimensions,
-  Platform,
-  SafeAreaView,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
 
 // Theme Colors based on user provided config
 const COLORS = {
@@ -55,8 +52,12 @@ const SHADOWS = {
   },
 };
 
+import { Alert } from 'react-native';
+import { useSession } from '../ctx';
+
 export default function SignupScreen() {
   const router = useRouter();
+  const { signUp } = useSession();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -66,8 +67,32 @@ export default function SignupScreen() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [activeField, setActiveField] = useState<string | null>(null);
+
+  const handleSignup = async () => {
+      if (!formData.fullName || !formData.email || !formData.phoneNumber || !formData.password) {
+          Alert.alert('Error', 'Please fill in all fields');
+          return;
+      }
+      
+      if (!agreedToTerms) {
+          Alert.alert('Error', 'You must agree to the Terms & Conditions');
+          return;
+      }
+
+      setLoading(true);
+      try {
+          const fullPhoneNumber = `${formData.phoneCode}${formData.phoneNumber}`;
+          await signUp(formData.email, formData.password, formData.fullName, fullPhoneNumber);
+          // Router redirect handled by useProtectedRoute
+      } catch (error: any) {
+          Alert.alert('Signup Failed', error.message || 'Something went wrong');
+      } finally {
+          setLoading(false);
+      }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -202,19 +227,20 @@ export default function SignupScreen() {
               </Text>
             </View>
 
-            {/* Create Account Button */}
             <TouchableOpacity
               style={styles.buttonWrapper}
               activeOpacity={0.9}
+              onPress={handleSignup}
+              disabled={loading}
             >
               <LinearGradient
                 colors={['#13ec5b', '#0c8a35']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.button}
+                style={[styles.button, loading && { opacity: 0.7 }]}
               >
-                <Text style={styles.buttonText}>Create Account</Text>
-                <MaterialIcons name="arrow-forward" size={20} color="white" />
+                <Text style={styles.buttonText}>{loading ? 'Creating Account...' : 'Create Account'}</Text>
+                {!loading && <MaterialIcons name="arrow-forward" size={20} color="white" />}
               </LinearGradient>
             </TouchableOpacity>
           </View>
